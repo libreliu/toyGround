@@ -222,8 +222,35 @@ public:
         vec2d nearest = dist_base[0].cast_to<double>() * grid_max + dist_points[0].cast_to<double>() / (double)hash_max * grid_max;
         printf("%lf,%lf,%lf,%lf\n", (double)x_in, (double)y_in, nearest.x(), nearest.y());
 #endif
-        return get_point_intensity(dist_base[0], dist_points[0]);
+        
+        //return get_point_intensity(dist_base[0], dist_points[0]) * weight_array[0] 
+        //    + get_point_intensity(dist_base[1], dist_points[1]) * weight_array[1];
+        //return get_point_intensity(dist_base[0], dist_points[0]) * weight_array[0];
+        //return get_point_intensity(dist_base[0], dist_points[0]) / std::sqrt(dist_array[0]);
 
+        return dist_array[0] / grid_max;
+
+        /* Steps to ensure smoothness:
+         * - Add ease function at border
+         * - dist. punishment
+         */
+        //double dist_punish = 1;
+        //const double dist_punish_thres = 0;
+        //if (dist_array[0] > dist_punish_thres) {
+        //    dist_punish = 1.0 / std::sqrt((dist_array[0] - dist_punish_thres));
+        //}
+
+        //double near[2] = { get_point_intensity(dist_base[0], dist_points[0]), get_point_intensity(dist_base[1], dist_points[1]) };
+        //double delta_dist = std::abs(dist_array[0] - dist_array[1]);
+        //const double thres = 8;
+        //if (delta_dist < thres) {
+        //    double weight_1 = ease((delta_dist / thres) / 2 + 0.5);
+        //    double weight_2 = 1 - weight_1;
+        //    return (near[0] * weight_1 + near[1] * weight_2) * dist_punish;
+        //}
+        //else {
+        //    return near[0] * dist_punish;
+        //}
     }
 
     WorleyNoiseGenerator(int grid_max, double prob_next, int grid_point_max) {
@@ -279,6 +306,12 @@ private:
 
     std::map<int, int> hash_map;
 
+    // x = 0 -> 0
+    // x = 1 -> 1
+    inline double ease(double x) {
+        return x * x * x * (x * (x * 6 - 15) + 10);
+    }
+
     // a simple hash, used to generate some randomness
     int hash(int m) {
         // srand(m);
@@ -297,14 +330,19 @@ private:
     // ! This should be stable locally, to avoid errors caused by trunctuation
     // So I've made this accepting integer only
     double get_point_intensity(vec2i base, vec2i point) {
-        return (double)
-                hash(
-                    hash(
-                        hash(
-                            base.x() + hash(base.y())
-                        ) + point.x()
-                    ) + point.y()
-                ) / hash_max;
+        // shift intensity!
+        const double intensity_min = 0.0;
+        const double intensity_max = 0.8;
+        double orig =  (double)
+                            hash(
+                                hash(
+                                    hash(
+                                        base.x() + hash(base.y())
+                                    ) + point.x()
+                                ) + point.y()
+                            ) / hash_max;
+        
+        return orig * (intensity_max - intensity_min) + intensity_min;
     }
 
     // [0, 1]
@@ -381,6 +419,6 @@ int main(void) {
 #ifdef WORLEY_DEBUG
     srand(0);
 #endif
-    NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 100, 100, 10, 0.3, 5);
+    NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 1000, 1000, 50, 0.3, 5);
     worley.run();
 }
