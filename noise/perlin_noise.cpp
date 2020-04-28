@@ -154,19 +154,21 @@ public:
 class WorleyNoiseGenerator {
 public:
     double get(int x_in, int y_in) {
+
+        vec2d self(x_in, y_in);
+
         // convert to grid coord
         double x = (double)x_in / grid_max;
         double y = (double)y_in / grid_max;
 
-        vec2d self(x, y);
-
+        // x_0, y_0 are used as indices
         int x_0 = (int)std::floor(x);
-        int y_0 = (int)std::floor(x);
+        int y_0 = (int)std::floor(y);
 
         // find nearest neighbor point from 9-way
         // - though 25 lattice is in fact needed
         std::array<vec2i, 9> possible_grid = {
-            vec2i(x_0-1, y_0+1), vec2i(x_0, y_0+1), vec2i(x_0+1, y_0), 
+            vec2i(x_0-1, y_0+1), vec2i(x_0, y_0+1), vec2i(x_0+1, y_0+1), 
             vec2i(x_0-1, y_0)  , vec2i(x_0, y_0)  , vec2i(x_0+1, y_0), 
             vec2i(x_0-1, y_0-1), vec2i(x_0, y_0-1), vec2i(x_0+1, y_0-1)
         };
@@ -182,7 +184,7 @@ public:
         };
 
         std::array<double, 2> dist_array = {
-            1e10, 1e10
+            1e20, 1e20
         };
 
         for (auto &grid_coord : possible_grid) {
@@ -191,8 +193,8 @@ public:
             for (auto &point_int : points) {
                 // get the actual position of the point
                 vec2d point = point_int.cast_to<double>() / (double)hash_max;
-                vec2d actual = point * grid_max + grid_coord.cast_to<double>();
-                double curr_dist = (self - actual).squared_norm();
+                vec2d actual = (point + grid_coord.cast_to<double>()) * grid_max ;
+                double curr_dist = std::sqrt((self - actual).squared_norm());
                 if (curr_dist < dist_array[0]) {
                     dist_points[1] = dist_points[0];
                     dist_array[1] = dist_array[0];
@@ -216,7 +218,12 @@ public:
             dist_array[0] / weight_sum, dist_array[1] / weight_sum
         };
 
+#ifdef WORLEY_DEBUG
+        vec2d nearest = dist_base[0].cast_to<double>() * grid_max + dist_points[0].cast_to<double>() / (double)hash_max * grid_max;
+        printf("%lf,%lf,%lf,%lf\n", (double)x_in, (double)y_in, nearest.x(), nearest.y());
+#endif
         return get_point_intensity(dist_base[0], dist_points[0]);
+
     }
 
     WorleyNoiseGenerator(int grid_max, double prob_next, int grid_point_max) {
@@ -225,19 +232,41 @@ public:
         this->prob_next = prob_next;
         this->grid_point_max = grid_point_max;
 
+#ifdef WORLEY_DEBUG
+        std::vector<vec2d> lattices;
         // print all lattice points
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
+        for (int i = -1; i <= 10; i++) {
+            for (int j = -1; j <= 10; j++) {
                 auto points_int = get_grid_points(i, j);
                 for (auto &point_int : points_int) {
                     vec2d point = point_int.cast_to<double>() / (double)hash_max;
-                    vec2d actual = point * grid_max + vec2i(i, j).cast_to<double>();
+                    vec2d actual = point * grid_max + vec2i(i, j).cast_to<double>() * grid_max;
 
-                    printf("%lf,%lf,%lf\n", actual.x(), actual.y()
-                            , get_point_intensity(vec2i(i,j), point_int));
+                    printf("%lf,%lf,%lf, %d, %d\n", actual.x(), actual.y()
+                            , get_point_intensity(vec2i(i,j), point_int), i, j);
+                    lattices.push_back(actual);
                 }
             }
         }
+
+        int width = 20;
+        int height = 20;
+        double* noise_data = new double[width * height];
+        memset(noise_data, 0, sizeof(double)* width * height);
+
+        for (auto& l : lattices) {
+            vec2i scr_coord = (l * (width / grid_max)).cast_to<int>();
+            noise_data[std::clamp(scr_coord.x(), 0, width - 1) * height + std::clamp(scr_coord.y(), 0, height - 1) ] = 1;
+        }
+
+
+        uint8_t* stbi_data = new uint8_t[width * height];
+        for (size_t i = 0; i < width * height; i++)
+            stbi_data[i] = static_cast<unsigned char>(std::clamp(noise_data[i] * 255, 0.0, 255.0));
+        stbi_write_png("noise_worley_lattice.png", width, height, 1, stbi_data, width);
+        delete [] noise_data;
+        delete [] stbi_data;
+#endif
     }
 
 private:
@@ -349,6 +378,9 @@ int main(void) {
     NoiseWriter<PerlinNoiseGenerator2D> perlin("noise_perlin.png", 1024, 1024, 200);
     perlin.run();
 
-    NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 500, 500, 50, 0.3, 5);
+#ifdef WORLEY_DEBUG
+    srand(0);
+#endif
+    NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 100, 100, 10, 0.3, 5);
     worley.run();
 }
