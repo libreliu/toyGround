@@ -52,8 +52,8 @@ public:
         x_max(x_max), y_max(y_max), grid_max(grid_max) {
         // generate random gradients
         rand_G = std::make_unique<vec2d[]>(grid_max * grid_max);
-        for (int i = 0; i < grid_max; i++) {
-            rand_G[i] = vec2d(rand(), rand()).normalize();
+        for (int i = 0; i < grid_max * grid_max; i++) {
+            rand_G[i] = vec2d(rand() - (RAND_MAX / 2), rand() - (RAND_MAX / 2)).normalize();
         }
     }
 
@@ -75,11 +75,15 @@ public:
         };
         assert(m <= 256 && n <= 256);
 
-        return rand_G[ (m + perm[n]) % grid_max ];
+        return rand_G[ (m + perm[n]) % (grid_max * grid_max) ];
     };
 
+    // inline double ease(double x) {
+    //     return 3 * x * x - 2 * x * x * x;
+    // }
+
     inline double ease(double x) {
-        return 3 * x * x - 2 * x * x * x;
+        return x * x * x * (x * (x * 6 - 15) + 10);
     }
 
     double get(int x_in, int y_in) {
@@ -88,8 +92,8 @@ public:
         double y = (double)y_in / y_max * grid_max;
 
         // grid base coord
-        int x_0 = (int)x;
-        int y_0 = (int)y;
+        int x_0 = (int)std::floor(x);
+        int y_0 = (int)std::floor(y);
 
         vec2d self(x, y);
 
@@ -98,10 +102,14 @@ public:
         vec2d g10 = get_pseudo_grad(x_0 + 1, y_0);
         vec2d g11 = get_pseudo_grad(x_0 + 1, y_0 + 1);
 
-        double s = g00.dot(self - vec2d(x_0, y_0));
-        double t = g01.dot(self - vec2d(x_0 + 1, y_0));
-        double u = g10.dot(self - vec2d(x_0, y_0 + 1));
-        double v = g11.dot(self - vec2d(x_0 + 1, y_0 + 1));
+        double s = g00.dot(vec2d(x - x_0, y - y_0));
+        // This will cause discontinuity!
+        // double t = g10.dot(vec2d(x_0 - x + 1, y - y_0));
+        // double u = g01.dot(vec2d(x - x_0, y_0 - y + 1));
+        // double v = g11.dot(vec2d(x_0 - x + 1, y_0 - y + 1));
+        double t = g10.dot(vec2d(x - x_0 - 1, y - y_0));
+        double u = g01.dot(vec2d(x - x_0, y - y_0 - 1));
+        double v = g11.dot(vec2d(x - x_0 - 1, y - y_0 - 1));
 
         double a = s + (t - s) * ease(x - x_0);
         double b = u + (v - u) * ease(x - x_0);
@@ -110,54 +118,6 @@ public:
     }
 
 };
-
-
-// double perlin_noise_2d(int x, int y) {
-//     const int output_w = 1024;
-//     const int output_h = 1024;
-//     const int f_w = 1024;
-//     const int f_h = 1024;
-//     const double scale_w = (double) f_w / output_w;
-//     const double scale_h = (double) f_h / output_h;
-
-//     // [0, f_w]
-//     double x_s = x * scale_w;
-//     // [0, f_h]
-//     double y_s = y * scale_h;
-
-//     int x_int = (int)std::floor(x_s);
-//     int y_int = (int)std::floor(y_s);
-    
-//     auto grad = [&](int x, int y) {
-//         // [-1, 1]
-//         double grad_x = ((double)hash_256(x) - 128) / 128;
-//         double grad_y = ((double)hash_256(y) - 128) / 128;
-//         return std::make_pair(grad_x, grad_y);
-//     };
-
-//     auto get_grid_noise = [&](int x, int y) {
-//         auto grid_grad = grad(x, y);
-//         return grid_grad.first * hash_256(x) 
-//                 + grid_grad.second * hash_256(y);
-//     };
-
-//     // interpolate components
-//     double xy = get_grid_noise(x, y);
-//     double xyy = get_grid_noise(x, y + 1);
-//     double xxy = get_grid_noise(x + 1, y);
-//     double xxyy = get_grid_noise(x + 1, y + 1);
-
-//     double dx = x_s - x_int;
-//     double dy = y_s - y_int;
-
-//     double dist_xy = dx * dx + dy * dy;
-//     double dist_xyy = dx * dx + (1-dy) * (1-dy);
-//     double dist_xxy = (1-dx) * (1-dx) + dy * dy;
-//     double dist_xxyy = (1-dx) * (1-dx) + (1-dy) * (1-dy);
-
-//     return dist_xy * xy + dist_xxy * xxy + dist_xyy * xyy + dist_xxyy * xxyy; 
-
-// }
 
 template <typename T>
 class NoiseWriter {
@@ -207,6 +167,6 @@ int main(void) {
     NoiseWriter<UniformNoiseGenerator> uniform("noise_uniform.png", 1024, 1024);
     uniform.run();
 
-    NoiseWriter<PerlinNoiseGenerator2D> perlin("noise_perlin.png", 1024, 1024, 50, 1024, 1024);
+    NoiseWriter<PerlinNoiseGenerator2D> perlin("noise_perlin.png", 1024, 1024, 5, 1024, 1024);
     perlin.run();
 }
