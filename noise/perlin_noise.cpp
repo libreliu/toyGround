@@ -1,6 +1,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -228,12 +231,16 @@ public:
         //return get_point_intensity(dist_base[0], dist_points[0]) * weight_array[0];
         //return get_point_intensity(dist_base[0], dist_points[0]) / std::sqrt(dist_array[0]);
 
-        return dist_array[0] / grid_max;
+        //return (1 - (dist_array[0] / grid_max)) ;
 
-        /* Steps to ensure smoothness:
-         * - Add ease function at border
-         * - dist. punishment
-         */
+        return sorder_ease(dist_array[0], 1.0 /grid_max) * 0.5;
+
+        //double dist_factor = dist_array[0] / grid_max;
+
+        ///* Steps to ensure smoothness:
+        // * - Add ease function at border
+        // * - dist. punishment
+        // */
         //double dist_punish = 1;
         //const double dist_punish_thres = 0;
         //if (dist_array[0] > dist_punish_thres) {
@@ -246,10 +253,10 @@ public:
         //if (delta_dist < thres) {
         //    double weight_1 = ease((delta_dist / thres) / 2 + 0.5);
         //    double weight_2 = 1 - weight_1;
-        //    return (near[0] * weight_1 + near[1] * weight_2) * dist_punish;
+        //    return (near[0] * weight_1 + near[1] * weight_2) * dist_punish * dist_factor;
         //}
         //else {
-        //    return near[0] * dist_punish;
+        //    return near[0] * dist_punish * dist_factor;
         //}
     }
 
@@ -310,6 +317,12 @@ private:
     // x = 1 -> 1
     inline double ease(double x) {
         return x * x * x * (x * (x * 6 - 15) + 10);
+    }
+
+    inline double sorder_ease(double x, double coeff) {
+        //return - coeff * x + 1;
+        return 1 - 0.005972 * x - 0.000451 * x * x + 0.0000135 * x * x * x - 2.025e-7 * x * x * x * x;
+        //return 1 - 0.01315661 * x + 0.0008915745 * x * x - 0.00002734948 * x * x * x + 1.33317e-7 * x * x * x * x;
     }
 
     // a simple hash, used to generate some randomness
@@ -409,6 +422,154 @@ public:
     }
 };
 
+template <typename G>
+class FractualNoiseGenerator2D {
+public:
+    FractualNoiseGenerator2D(int level, int grid_max) {
+        double weight = 1;
+        double total_weight = 0;
+        for (int i = 0; i < level; i++) {
+            generators.push_back(std::make_unique<G>(grid_max));
+            weights.push_back(weight);
+            total_weight += weight;
+            weight /= 2;
+            grid_max /= 2;
+        }
+
+        //for (int i = 0; i < level; i++) {
+        //    weights[i] /= total_weight;
+        //}
+
+    }
+
+    double get(int i, int j) {
+        double res = 0;
+        for (int m = 0; m < generators.size(); m++) {
+            res += generators[m].get()->get(i, j) * weights[m];
+        }
+        return res;
+    }
+private:
+    std::vector<std::unique_ptr<G>> generators;
+    std::vector<double> weights;
+};
+
+template <typename T>
+class CompositeGenerator {
+public:
+    template <typename ...U>
+    CompositeGenerator(int total, U&&... u) {
+        for (int i = 0; i < total; i++) {
+            generators.push_back(std::make_unique<T>(std::forward<U>(u)...));
+        }
+    }
+
+    double get(int i, int j) {
+        double res = 0;
+        for (int m = 0; m < generators.size(); m++) {
+            res += generators[m].get()->get(i, j);
+        }
+        return res;
+    }
+private:
+    std::vector<std::unique_ptr<T>> generators;
+};
+
+
+class PictureBlender {
+private:
+    std::vector<std::string> names;
+    std::vector<double> weights;
+    std::string output_name;
+public:
+    PictureBlender(const char* file_out) {
+        output_name = file_out;
+    }
+
+    PictureBlender& add(const char* filename, double weight) {
+        names.push_back(filename);
+        weights.push_back(weight);
+        
+        return *this;
+    }
+
+    bool run() {
+        int w_init, h_init, n_init;
+        stbi_uc* buf = stbi_load(names[0].c_str(), &w_init, &h_init, &n_init, 0);
+
+        if (buf == nullptr) {
+            return false;
+        }
+
+        assert(n_init == 1);
+
+        for (int i = 0; i < h_init; i++) {
+            for (int j = 0; j < w_init; j++) {
+                // todo: change to double to avoid unnecessary precision loss
+                buf[i * w_init * n_init + j * n_init + 0] *= weights[0];
+            }
+        }
+
+        for (int m = 1; m < names.size(); m++) {
+            int w, h, n;
+            stbi_uc* buf_imm = stbi_load(names[m].c_str(), &w, &h, &n, 0);
+
+            assert(w == w_init && h == h_init && n == n_init);
+
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    buf[i * w * n + j * n + 0] += weights[m] * buf_imm[i * w * n + j * n + 0];
+                }
+            }
+
+            stbi_image_free(buf_imm);
+        }
+
+        stbi_write_png(output_name.c_str(), w_init, h_init, n_init, buf, w_init * n_init);
+
+        stbi_image_free(buf);
+        
+        return true;
+    }
+
+
+    bool run_direct() {
+        int w_init, h_init, n_init;
+        stbi_uc* buf = stbi_load(names[0].c_str(), &w_init, &h_init, &n_init, 0);
+
+        if (buf == nullptr) {
+            return false;
+        }
+
+        assert(n_init == 1);
+
+        for (int m = 1; m < names.size(); m++) {
+            int w, h, n;
+            stbi_uc* buf_imm = stbi_load(names[m].c_str(), &w, &h, &n, 0);
+
+            assert(w == w_init && h == h_init && n == n_init);
+
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    buf[i * w * n + j * n + 0] = 
+                        std::clamp((int)((double)buf[i * w * n + j * n + 0] / 255 * buf_imm[i * w * n + j * n + 0]), 0, 255);
+                }
+            }
+
+            stbi_image_free(buf_imm);
+        }
+
+        stbi_write_png(output_name.c_str(), w_init, h_init, n_init, buf, w_init * n_init);
+
+        stbi_image_free(buf);
+
+        return true;
+    }
+
+private:
+
+};
+
 int main(void) {
     NoiseWriter<UniformNoiseGenerator> uniform("noise_uniform.png", 1024, 1024);
     uniform.run();
@@ -416,9 +577,38 @@ int main(void) {
     NoiseWriter<PerlinNoiseGenerator2D> perlin("noise_perlin.png", 1024, 1024, 200);
     perlin.run();
 
+    NoiseWriter<PerlinNoiseGenerator2D> perlin_dense("noise_perlin_dense.png", 1024, 1024, 100);
+    perlin_dense.run();
+
 #ifdef WORLEY_DEBUG
     srand(0);
 #endif
-    NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 1000, 1000, 50, 0.3, 5);
+    NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 1024, 1024, 50, 0.3, 5);
+    //NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 1024, 1024, 100, 0.3, 5);
     worley.run();
+
+    //{
+
+    //    PictureBlender blender("noise_perlin_blended.png");
+    //    blender.add("noise_perlin.png", 0.7).add("noise_perlin_dense.png", 0.3).run();
+    //}
+
+    PictureBlender blender("noise_blended.png");
+    blender.add("noise_worley.png", 0.2).add("noise_perlin.png", 0.8).run_direct();
+
+    //NoiseWriter<FractualNoiseGenerator2D<PerlinNoiseGenerator2D>> fractual("noise_fractual.png", 1024, 1024, 5, 400);
+    //fractual.run();
+
+    NoiseWriter<CompositeGenerator<FractualNoiseGenerator2D<PerlinNoiseGenerator2D>>> composite_fractual("noise_fractual.png", 1024, 1024, 10, 5, 400);
+    composite_fractual.run();
+
+    {
+
+    }
+
+    {
+
+        PictureBlender blender("noise.png");
+        blender.add("noise_fractual.png", 0.2).add("noise_worley.png", 0.8).run_direct();
+    }
 }
