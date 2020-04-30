@@ -10,3 +10,4 @@ set(EXTERNAL_HEADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(PROJECT_HEADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/api)
 
 add_subdirectory(noise)
+add_subdirectory(editor)
