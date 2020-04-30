@@ -1,0 +1,1 @@
+// This wxPanel helds responsible for all noise related logic.
