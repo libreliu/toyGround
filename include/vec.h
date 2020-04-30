@@ -28,8 +28,8 @@ public:
     >
     vec2(Floating x, Floating y) : x_(x), y_(y) {
         // pass
-        assert(isfinite(x));
-        assert(isfinite(y));
+        assert(std::isfinite(x));
+        assert(std::isfinite(y));
     }
 
     template <typename Integer,
@@ -45,11 +45,11 @@ public:
         // pass
     }
 
-    inline vec2<T> operator+(vec2<T> &other) {
+    inline vec2<T> operator+(const vec2<T> &other) {
         return vec2<T>(other.x_ + x_, other.y_ + y_);
     }
 
-    inline vec2<T> operator-(vec2<T> &other) {
+    inline vec2<T> operator-(const vec2<T> &other) {
         return vec2<T>(x_ - other.x_, y_ - other.y_);
     }
 
@@ -67,7 +67,7 @@ public:
         return vec2<T>(x_ / val, y_ / val);
     }
 
-    inline T dot(vec2<T> &other) {
+    inline T dot(const vec2<T> &other) {
         return other.x_ * this->x_ + other.y_ * this->y_;
     }
 
@@ -77,7 +77,7 @@ public:
 
     inline vec2<T> normalize() {
         T norm = std::sqrt(x_ * x_ + y_ * y_);
-        assert(isfinite(norm) && norm != 0);
+        assert(std::isfinite(norm) && norm != 0);
         return vec2<T>(x_ / norm, y_ / norm);
     }
 
