@@ -6,7 +6,9 @@ wxIMPLEMENT_APP(Editor);
 
 bool Editor::OnInit()
 {
-    EditorFrame *frame = new EditorFrame();
-    frame->Show(true);
+    wxInitAllImageHandlers();
+    EditorFrame *frame = new EditorFrame(NULL, wxID_ANY, wxEmptyString);
+    SetTopWindow(frame);
+    frame->Show();
     return true;
 }

@@ -15,7 +15,7 @@ set (editor_SRCS
 
 message("*NOTICE*: The vcpkg + wxWidgets + CMake is currently a crap!")
 
-find_package(wxWidgets REQUIRED COMPONENTS net core base)
+find_package(wxWidgets REQUIRED COMPONENTS net core base propgrid)
 include(${wxWidgets_USE_FILE})
 
 add_executable(editor ${editor_SRCS})
