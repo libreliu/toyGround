@@ -33,7 +33,8 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #define ID_SAVE 1000
-#define ID_ABOUT 1001
+#define ID_EXIT 1001
+#define ID_ABOUT 1002
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class EditorInst
@@ -55,6 +56,9 @@ class EditorInst : public wxFrame
 		NoisePanel* NoiseShow;
 
 		// Virtual event handlers, overide them in your derived class
+		void OnMenuSave( wxCommandEvent& event );
+		void OnMenuExit( wxCommandEvent& event );
+		void OnMenuAbout( wxCommandEvent& event );
 		void MethodComboChange( wxCommandEvent& event );
 		void PropertyChanged( wxPropertyGridEvent& event );
 

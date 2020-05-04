@@ -19,6 +19,10 @@ EditorInst::EditorInst( wxWindow* parent, wxWindowID id, const wxString& title, 
 	save = new wxMenuItem( file, ID_SAVE, wxString( wxT("Save") ) , wxEmptyString, wxITEM_NORMAL );
 	file->Append( save );
 
+	wxMenuItem* exit;
+	exit = new wxMenuItem( file, ID_EXIT, wxString( wxT("Exit") ) , wxEmptyString, wxITEM_NORMAL );
+	file->Append( exit );
+
 	EditorMenuBar->Append( file, wxT("File") );
 
 	help = new wxMenu();
@@ -78,6 +82,9 @@ EditorInst::EditorInst( wxWindow* parent, wxWindowID id, const wxString& title, 
 	this->Layout();
 
 	// Connect Events
+	file->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( EditorInst::OnMenuSave ), this, save->GetId());
+	file->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( EditorInst::OnMenuExit ), this, exit->GetId());
+	help->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( EditorInst::OnMenuAbout ), this, about->GetId());
 	MethodCombo->Connect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( EditorInst::MethodComboChange ), NULL, this );
 	NoisePropertyGrid->Connect( wxEVT_PG_CHANGED, wxPropertyGridEventHandler( EditorInst::PropertyChanged ), NULL, this );
 }
