@@ -9,6 +9,7 @@
 
 #include <wx/artprov.h>
 #include <wx/xrc/xmlres.h>
+#include "NoisePanel.h"
 #include <wx/string.h>
 #include <wx/bitmap.h>
 #include <wx/image.h>
@@ -37,7 +38,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 /// Class EditorInst
 ///////////////////////////////////////////////////////////////////////////////
-class EditorInst : public EditorFrame
+class EditorInst : public wxFrame
 {
 	private:
 
@@ -51,13 +52,11 @@ class EditorInst : public EditorFrame
 		wxStaticText* NoiseLabel1;
 		wxComboBox* MethodCombo;
 		wxPropertyGrid* NoisePropertyGrid;
-		wxPanel* NoiseShow;
+		NoisePanel* NoiseShow;
 
 		// Virtual event handlers, overide them in your derived class
 		void MethodComboChange( wxCommandEvent& event );
 		void PropertyChanged( wxPropertyGridEvent& event );
-		void OnNoiseShowPaint( wxPaintEvent& event );
-		void OnNoiseShowSize( wxSizeEvent& event );
 
 
 	public:

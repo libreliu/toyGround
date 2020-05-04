@@ -9,7 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////
 
-EditorInst::EditorInst( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : EditorFrame( parent, id, title, pos, size, style )
+EditorInst::EditorInst( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 
@@ -69,7 +69,7 @@ EditorInst::EditorInst( wxWindow* parent, wxWindowID id, const wxString& title, 
 	NoiseCtrl->SetSizer( sbSizer1 );
 	NoiseCtrl->Layout();
 	sbSizer1->Fit( NoiseCtrl );
-	NoiseShow = new wxPanel( m_splitter1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	NoiseShow = new NoisePanel( m_splitter1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	m_splitter1->SplitVertically( NoiseCtrl, NoiseShow, 150 );
 	bSizer1->Add( m_splitter1, 1, wxEXPAND, 5 );
 
@@ -80,8 +80,6 @@ EditorInst::EditorInst( wxWindow* parent, wxWindowID id, const wxString& title, 
 	// Connect Events
 	MethodCombo->Connect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( EditorInst::MethodComboChange ), NULL, this );
 	NoisePropertyGrid->Connect( wxEVT_PG_CHANGED, wxPropertyGridEventHandler( EditorInst::PropertyChanged ), NULL, this );
-	NoiseShow->Connect( wxEVT_PAINT, wxPaintEventHandler( EditorInst::OnNoiseShowPaint ), NULL, this );
-	NoiseShow->Connect( wxEVT_SIZE, wxSizeEventHandler( EditorInst::OnNoiseShowSize ), NULL, this );
 }
 
 EditorInst::~EditorInst()
@@ -89,7 +87,5 @@ EditorInst::~EditorInst()
 	// Disconnect Events
 	MethodCombo->Disconnect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( EditorInst::MethodComboChange ), NULL, this );
 	NoisePropertyGrid->Disconnect( wxEVT_PG_CHANGED, wxPropertyGridEventHandler( EditorInst::PropertyChanged ), NULL, this );
-	NoiseShow->Disconnect( wxEVT_PAINT, wxPaintEventHandler( EditorInst::OnNoiseShowPaint ), NULL, this );
-	NoiseShow->Disconnect( wxEVT_SIZE, wxSizeEventHandler( EditorInst::OnNoiseShowSize ), NULL, this );
 
 }
