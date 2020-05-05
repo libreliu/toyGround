@@ -55,12 +55,12 @@ EditorInst::EditorInst( wxWindow* parent, wxWindowID id, const wxString& title, 
 	NoiseLabel1->Wrap( 0 );
 	fgSizer1->Add( NoiseLabel1, 0, wxALIGN_CENTER, 0 );
 
-	MethodCombo = new wxComboBox( sbSizer1->GetStaticBox(), wxID_ANY, wxT("Uniform"), wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY );
+	MethodCombo = new wxComboBox( sbSizer1->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY );
 	MethodCombo->Append( wxT("Uniform") );
 	MethodCombo->Append( wxT("Perlin") );
 	MethodCombo->Append( wxT("Worley") );
-	MethodCombo->Append( wxT("Hybrid") );
-	MethodCombo->SetSelection( 0 );
+	MethodCombo->Append( wxT("Fractual-Perlin") );
+	MethodCombo->Append( wxT("Composite-FP") );
 	fgSizer1->Add( MethodCombo, 0, wxEXPAND, 0 );
 
 
@@ -68,6 +68,9 @@ EditorInst::EditorInst( wxWindow* parent, wxWindowID id, const wxString& title, 
 
 	NoisePropertyGrid = new wxPropertyGrid(sbSizer1->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxPG_DEFAULT_STYLE);
 	sbSizer1->Add( NoisePropertyGrid, 150, wxALL|wxEXPAND, 5 );
+
+	NoiseStartButton = new wxButton( sbSizer1->GetStaticBox(), wxID_ANY, wxT("Run!"), wxDefaultPosition, wxDefaultSize, 0 );
+	sbSizer1->Add( NoiseStartButton, 0, wxALL|wxEXPAND, 5 );
 
 
 	NoiseCtrl->SetSizer( sbSizer1 );
@@ -87,6 +90,7 @@ EditorInst::EditorInst( wxWindow* parent, wxWindowID id, const wxString& title, 
 	help->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( EditorInst::OnMenuAbout ), this, about->GetId());
 	MethodCombo->Connect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( EditorInst::MethodComboChange ), NULL, this );
 	NoisePropertyGrid->Connect( wxEVT_PG_CHANGED, wxPropertyGridEventHandler( EditorInst::PropertyChanged ), NULL, this );
+	NoiseStartButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( EditorInst::NoiseStartButtonClicked ), NULL, this );
 }
 
 EditorInst::~EditorInst()
@@ -94,5 +98,6 @@ EditorInst::~EditorInst()
 	// Disconnect Events
 	MethodCombo->Disconnect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( EditorInst::MethodComboChange ), NULL, this );
 	NoisePropertyGrid->Disconnect( wxEVT_PG_CHANGED, wxPropertyGridEventHandler( EditorInst::PropertyChanged ), NULL, this );
+	NoiseStartButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( EditorInst::NoiseStartButtonClicked ), NULL, this );
 
 }

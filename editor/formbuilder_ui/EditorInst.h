@@ -25,6 +25,7 @@
 #include <wx/sizer.h>
 #include <wx/propgrid/propgrid.h>
 #include <wx/propgrid/advprops.h>
+#include <wx/button.h>
 #include <wx/statbox.h>
 #include <wx/panel.h>
 #include <wx/splitter.h>
@@ -53,6 +54,7 @@ class EditorInst : public wxFrame
 		wxStaticText* NoiseLabel1;
 		wxComboBox* MethodCombo;
 		wxPropertyGrid* NoisePropertyGrid;
+		wxButton* NoiseStartButton;
 		NoisePanel* NoiseShow;
 
 		// Virtual event handlers, overide them in your derived class
@@ -61,6 +63,7 @@ class EditorInst : public wxFrame
 		void OnMenuAbout( wxCommandEvent& event );
 		void MethodComboChange( wxCommandEvent& event );
 		void PropertyChanged( wxPropertyGridEvent& event );
+		void NoiseStartButtonClicked( wxCommandEvent& event );
 
 
 	public:
