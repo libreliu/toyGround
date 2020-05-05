@@ -77,6 +77,11 @@ public:
 
     void onWorkerCompletion(wxCommandEvent &evt);
 
+    inline bool isImageAvailable() {
+        return image_available;
+    }
+    void saveTo(const wxString& path);
+
     DECLARE_EVENT_TABLE();
 };
 

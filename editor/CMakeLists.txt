@@ -22,7 +22,7 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_definitions(-D__WXDEBUG__)
 endif()
 
-find_package(wxWidgets REQUIRED COMPONENTS net core base propgrid)
+find_package(wxWidgets REQUIRED COMPONENTS core base propgrid adv)
 include(${wxWidgets_USE_FILE})
 
 add_executable(editor ${editor_SRCS})

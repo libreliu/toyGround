@@ -19,7 +19,6 @@ BEGIN_EVENT_TABLE(NoisePanel, wxPanel)
 EVT_PAINT(NoisePanel::paintEvent)
 // Size event
 EVT_SIZE(NoisePanel::OnSize)
-
 EVT_COMMAND  (NoisePanel::evfinish_id, wxEVT_COMMAND_TEXT_UPDATED, NoisePanel::onWorkerCompletion)
 END_EVENT_TABLE()
 
@@ -36,12 +35,20 @@ NoisePanel::NoisePanel(wxWindow *parent,
               
 {
     // register event handler
+    // - already defined in a static manner
 
 }
 
 NoisePanel::~NoisePanel() {
-    // wait until thread terminates execution
+    // force kill all thread
+    // todo: handle gracefully
+    if (worker_running) {
+        for (int i = 0; i < worker_ptrs.size(); i++) {
+            worker_ptrs[i]->Kill();
+        }
+    }
 
+    // note: CRT might be corrupted.. So no need to save memory (?)
 }
 
 void NoisePanel::paintEvent(wxPaintEvent& event)
@@ -224,10 +231,29 @@ void NoisePanel::onWorkerCompletion(wxCommandEvent &evt) {
             }
         }
 
+        // free all wxThread structure
+        // - no need.. wxThread will handle at exit
+        // for (auto p: worker_ptrs) {
+        //     delete p;
+        // }
+
+        worker_ptrs.clear();
+        worker_status.clear();
+
         image = wxBitmap(image_imaged);
         image_available = true;
 
         paintNow();
 
     }
-} 
+}
+
+void NoisePanel::saveTo(const wxString& path) {
+    wxLogDebug(path);
+    assert(image_available);
+    if (image.ConvertToImage().SaveFile(path)) {
+        wxLogStatus("Picture saving successful.");
+    } else {
+        wxLogStatus("Picture saving failed. (Maybe you're not saving a PNG file?)");
+    }
+}

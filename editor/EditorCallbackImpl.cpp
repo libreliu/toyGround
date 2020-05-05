@@ -1,5 +1,6 @@
 #include <Editor.h>
 #include <EditorInst.h>
+#include <wx/aboutdlg.h>
 
 void EditorInst::MethodComboChange(wxCommandEvent &event) {
     // current selection
@@ -36,15 +37,31 @@ void EditorInst::PropertyChanged(wxPropertyGridEvent &event) {
 }
 
 void EditorInst::OnMenuSave(wxCommandEvent &event) {
+    if (!NoiseShow->isImageAvailable()) {
+        wxLogStatus("Nothing to be saved for now..");
+        return;
+    }
 
+    wxString path = wxSaveFileSelector("image", "PNG Files (*.png)|*.png");
+    if (path.empty()) {
+        wxLogStatus("Sorry, but it seems that you've entered nothing..");
+        return;
+    }
+
+    NoiseShow->saveTo(path);
 }
 
 void EditorInst::OnMenuExit(wxCommandEvent &event) {
-    
+    Close(true);
 }
 
 void EditorInst::OnMenuAbout(wxCommandEvent &event) {
-    
+    wxAboutDialogInfo aboutInfo;
+    aboutInfo.SetName("toyGround Editor");
+    aboutInfo.SetDescription("A simple noise generator and editor.");
+    aboutInfo.AddDeveloper("Libre Liu");
+
+    wxAboutBox(aboutInfo, this);
 }
 
 void EditorInst::NoiseStartButtonClicked(wxCommandEvent &event) {
