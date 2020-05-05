@@ -1,5 +1,5 @@
 #include <Editor.h>
-#include <EditorFrame.h>
+#include <EditorInst.h>
 
 // Insert appropriate main() function for each platform
 wxIMPLEMENT_APP(Editor);
@@ -7,7 +7,7 @@ wxIMPLEMENT_APP(Editor);
 bool Editor::OnInit()
 {
     wxInitAllImageHandlers();
-    EditorFrame *frame = new EditorFrame(NULL, wxID_ANY, wxEmptyString);
+    EditorInst *frame = new EditorInst(NULL);
     SetTopWindow(frame);
     frame->Show();
     return true;

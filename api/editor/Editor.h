@@ -10,10 +10,3 @@ class Editor : public wxApp
 public:
     virtual bool OnInit();
 };
-
-
-
-enum
-{
-    ID_Hello = 1
-};
