@@ -1,10 +1,11 @@
 #include <generators/Generators.h>
 
-WorleyNoiseGenerator::WorleyNoiseGenerator(int grid_max, double prob_next, int grid_point_max) {
-    this->hash_max = RAND_MAX;
+WorleyNoiseGenerator::WorleyNoiseGenerator(int grid_max, double prob_next, int grid_point_max, int seed) {
+    this->hash_max = 255;
     this->grid_max = grid_max;
     this->prob_next = prob_next;
     this->grid_point_max = grid_point_max;
+    this->seed = seed;
 
 #ifdef WORLEY_DEBUG
     std::vector<vec2d> lattices;

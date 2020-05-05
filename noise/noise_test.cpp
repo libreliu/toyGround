@@ -102,16 +102,16 @@ int main(void) {
     NoiseWriter<UniformNoiseGenerator> uniform("noise_uniform.png", 1024, 1024);
     uniform.run();
 
-    NoiseWriter<PerlinNoiseGenerator2D> perlin("noise_perlin.png", 1024, 1024, 200);
+    NoiseWriter<PerlinNoiseGenerator2D> perlin("noise_perlin.png", 1024, 1024, 200, 1);
     perlin.run();
 
-    NoiseWriter<PerlinNoiseGenerator2D> perlin_dense("noise_perlin_dense.png", 1024, 1024, 100);
+    NoiseWriter<PerlinNoiseGenerator2D> perlin_dense("noise_perlin_dense.png", 1024, 1024, 100, 1);
     perlin_dense.run();
 
 #ifdef WORLEY_DEBUG
     srand(0);
 #endif
-    NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 1024, 1024, 50, 0.3, 5);
+    NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 1024, 1024, 50, 0.3, 5, 1);
     //NoiseWriter<WorleyNoiseGenerator> worley("noise_worley.png", 1024, 1024, 100, 0.3, 5);
     worley.run();
 
@@ -127,7 +127,7 @@ int main(void) {
     //NoiseWriter<FractualNoiseGenerator2D<PerlinNoiseGenerator2D>> fractual("noise_fractual.png", 1024, 1024, 5, 400);
     //fractual.run();
 
-    NoiseWriter<CompositeGenerator<FractualNoiseGenerator2D<PerlinNoiseGenerator2D>>> composite_fractual("noise_fractual.png", 1024, 1024, 10, 5, 400);
+    NoiseWriter<CompositeGenerator<FractualNoiseGenerator2D<PerlinNoiseGenerator2D>>> composite_fractual("noise_fractual.png", 1024, 1024, 10, 5, 400, 1);
     composite_fractual.run();
 
     {
