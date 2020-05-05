@@ -31,17 +31,21 @@ wxThread::ExitCode NoiseWorker::Entry() {
         invokeGenerator<UniformNoiseGenerator>();
     } else if (generator_type == "Perlin") {
         invokeGenerator<PerlinNoiseGenerator2D>(
-            cur_param_dict["grid_max"].As<int>());
+            cur_param_dict["grid_max"].As<int>(),
+            cur_param_dict["seed"].As<int>()
+        );
     } else if (generator_type == "Worley") {
         invokeGenerator<WorleyNoiseGenerator>(
             cur_param_dict["grid_max"].As<int>(),
             cur_param_dict["prob_next"].As<double>(),
-            cur_param_dict["grid_point_max"].As<int>()
+            cur_param_dict["grid_point_max"].As<int>(),
+            cur_param_dict["seed"].As<int>()
         );
     } else if (generator_type == "Fractual-Perlin") {
         invokeGenerator<FractualNoiseGenerator2D<PerlinNoiseGenerator2D>>(
             cur_param_dict["level"].As<int>(),
-            cur_param_dict["grid_max"].As<double>()
+            cur_param_dict["grid_max"].As<int>(),
+            cur_param_dict["seed"].As<int>()
         );
     } else if (generator_type == "Composite-FP") {
         invokeGenerator<CompositeGenerator
@@ -49,7 +53,8 @@ wxThread::ExitCode NoiseWorker::Entry() {
                                 <PerlinNoiseGenerator2D>>>(
             cur_param_dict["total"].As<int>(),
             cur_param_dict["level"].As<int>(),
-            cur_param_dict["grid_max"].As<double>()
+            cur_param_dict["grid_max"].As<int>(),
+            cur_param_dict["seed"].As<int>()
         );
     } else {
         // pass

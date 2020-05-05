@@ -13,11 +13,12 @@
 template <typename G>
 class FractualNoiseGenerator2D {
 public:
-    FractualNoiseGenerator2D(int level, int grid_max) {
+    template <typename... U>
+    FractualNoiseGenerator2D(int level, int grid_max, U&&... u) {
         double weight = 1;
         double total_weight = 0;
         for (int i = 0; i < level; i++) {
-            generators.push_back(std::make_unique<G>(grid_max));
+            generators.push_back(std::make_unique<G>(grid_max, std::forward<U>(u)...));
             weights.push_back(weight);
             total_weight += weight;
             weight /= 2;

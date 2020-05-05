@@ -9,7 +9,7 @@
 #include <vector>
 #include <array>
 #include <map>
-
+#include <random>
 
 /* Perlin Noise Generation 
  * - References:
@@ -27,8 +27,11 @@ private:
     std::unique_ptr<vec2d[]> rand_G;
     int grid_max;
 
+    std::uniform_real_distribution<double> rnd_distr;
+    std::minstd_rand rnd_engine;
+
 public:
-    PerlinNoiseGenerator2D(int grid_max);
+    PerlinNoiseGenerator2D(int grid_max, int seed);
 
     inline vec2d get_pseudo_grad(int m, int n) {
         // permutation array

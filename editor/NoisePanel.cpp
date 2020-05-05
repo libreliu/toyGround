@@ -78,18 +78,18 @@ void NoisePanel::initParams() {
     if (generator_type == "Uniform") {
         // no param
     } else if (generator_type == "Perlin") {
-        cur_param_dict.insert(std::make_pair("grid_max", wxAny(50)));
+        cur_param_dict.insert(std::make_pair("grid_max", wxAny(200)));
     } else if (generator_type == "Worley") {
         cur_param_dict.insert(std::make_pair("grid_max", wxAny(50)));
         cur_param_dict.insert(std::make_pair("prob_next", wxAny(0.5)));
         cur_param_dict.insert(std::make_pair("grid_point_max", wxAny(5)));
     } else if (generator_type == "Fractual-Perlin") {
-        cur_param_dict.insert(std::make_pair("level", wxAny(50)));
-        cur_param_dict.insert(std::make_pair("grid_max", wxAny(50)));
+        cur_param_dict.insert(std::make_pair("level", wxAny(5)));
+        cur_param_dict.insert(std::make_pair("grid_max", wxAny(400)));
     } else if (generator_type == "Composite-FP") {
         cur_param_dict.insert(std::make_pair("total", wxAny(10)));
         cur_param_dict.insert(std::make_pair("level", wxAny(5)));
-        cur_param_dict.insert(std::make_pair("grid_max", wxAny(50)));
+        cur_param_dict.insert(std::make_pair("grid_max", wxAny(400)));
     } else {
         wxLogError("Unknown noise type. Abort.");
         clearParams();
