@@ -25,7 +25,14 @@ endif()
 find_package(wxWidgets REQUIRED COMPONENTS core base propgrid adv)
 include(${wxWidgets_USE_FILE})
 
-add_executable(editor ${editor_SRCS})
+# Fix error LNK2019: unresolved external symbol main
+# Since wxIMPLEMENT_APP instantiates WinMain instead of main
+if(WIN32)
+    add_executable(editor WIN32 ${editor_SRCS})
+else()
+    add_executable(editor ${editor_SRCS})
+endif()
+
 target_link_libraries(editor noise ${wxWidgets_LIBRARIES})
 
 # Todo: also add header files into dependency
