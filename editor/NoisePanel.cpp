@@ -53,14 +53,17 @@ NoisePanel::~NoisePanel() {
 
 void NoisePanel::paintEvent(wxPaintEvent& event)
 {
-    paintNow();
+    if (image_available) {
+        wxPaintDC dc(this);
+        this->render(dc);
+    }
 }
 
 // manual update!
 void NoisePanel::paintNow() {
     if (image_available) {
-        wxPaintDC dc(this);
-        this->render(dc);
+        wxClientDC dc(this);
+        this->render(dc); 
     }
 }
 
