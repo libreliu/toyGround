@@ -1,6 +1,25 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(toyGround VERSION 0.1.0)
 
+# Test if user have done "conan install"
+if (NOT EXISTS "${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
+    message("conanbuildinfo.cmake did not found!")
+    exec_program("conan" "${CMAKE_BINARY_DIR}"
+        ARGS install "${CMAKE_CURRENT_SOURCE_DIR}"
+        OUTPUT_VARIABLE conan_output
+        RETURN_VALUE conan_ret)
+    message("Conan output: ${conan_output}")
+    if (conan_ret EQUAL 0)
+        message("Conan install successful.")
+    else()
+        message(FATAL_ERROR "Conan install failed!")
+    endif()
+else()
+    message("conanbuildinfo.cmake found!")
+endif()
+
+# Time to inject conan!
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 
 # External headers are not meant to be changed, so they don't 
 # appear as targets in build system as well
