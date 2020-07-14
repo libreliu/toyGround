@@ -12,7 +12,8 @@ if (NOT EXISTS "${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
     if (conan_ret EQUAL 0)
         message("Conan install successful.")
     else()
-        message(FATAL_ERROR "Conan install failed!")
+        message(FATAL_ERROR "Conan install failed! Make sure you have conan installed. "
+        "Sometimes you may need to use conan install . with --build=missing option to manually build the stuff.")
     endif()
 else()
     message("conanbuildinfo.cmake found!")
@@ -20,6 +21,7 @@ endif()
 
 # Time to inject conan!
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup(TARGETS)
 
 # External headers are not meant to be changed, so they don't 
 # appear as targets in build system as well

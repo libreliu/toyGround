@@ -17,13 +17,17 @@ set (editor_SRCS
 
 message("*NOTICE*: The vcpkg + wxWidgets + CMake is currently a crap!")
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    message("Enabling __WXDEBUG__ macro, making all wxLogDebug useful..")
-    add_definitions(-D__WXDEBUG__)
+if (CMAKE_BUILD_TYPE)
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+        message("Enabling __WXDEBUG__ macro, making all wxLogDebug useful..")
+        add_definitions(-D__WXDEBUG__)
+    endif()
+else()
+    message("CMake Build Type not specified. Skipping wxDEBUG macro setup.")
 endif()
 
-find_package(wxWidgets REQUIRED COMPONENTS core base propgrid adv)
-include(${wxWidgets_USE_FILE})
+#find_package(wxWidgets REQUIRED COMPONENTS core base propgrid adv)
+#include(${wxWidgets_USE_FILE})
 
 # Fix error LNK2019: unresolved external symbol main
 # Since wxIMPLEMENT_APP instantiates WinMain instead of main
@@ -33,7 +37,7 @@ else()
     add_executable(editor ${editor_SRCS})
 endif()
 
-target_link_libraries(editor noise ${wxWidgets_LIBRARIES})
+target_link_libraries(editor noise CONAN_PKG::wxwidgets)
 
 # Todo: also add header files into dependency
 target_include_directories(editor PRIVATE ${PROJECT_HEADER_DIR}/editor)
