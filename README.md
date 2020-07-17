@@ -15,6 +15,13 @@ Graphics toy collections for libreliu
 ## Screenshot
 ![main_window](docs/assets/editor_fractual_perlin.png)
 
+## Install (New!)
+I've switched the workflow to Conan, since wxWidgets build well in Conan for all platforms. (Thanks to bincrafters.)
+
+### Conan Practices
+1. I've used the CMake target method to avoid linking wxWidgets to all of the projects.
+2. I've used CMakeLists to do conan install automatically, but **no conanfile.txt modification detection** for now.
+
 ## Install
 Build and run under Ubuntu 18.04:
 ```

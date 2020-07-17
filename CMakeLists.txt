@@ -32,3 +32,4 @@ set(PROJECT_HEADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/api)
 
 add_subdirectory(noise)
 add_subdirectory(editor)
+add_subdirectory(vulkan)
