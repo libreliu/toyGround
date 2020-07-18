@@ -40,6 +40,7 @@ private:
     vk::Instance instance;
     vk::DebugUtilsMessengerEXT debugMessenger;
     vk::DispatchLoaderDynamic dldi;
+    vk::PhysicalDevice physicalDevice;
     SillyDispatcher dldis;
 
     constexpr static bool enableValidationLayers = true;
@@ -48,6 +49,7 @@ private:
         createInstance();
         //dldi.init(instance);
         setupDebugMessenger();
+        pickPhysicalDevice();
 
         glfwInit();
 
@@ -55,6 +57,49 @@ private:
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         window = glfwCreateWindow(800, 600, "Vulkan", nullptr, nullptr);
+    }
+
+    void pickPhysicalDevice() {
+        // enumerate devices
+        auto devices = instance.enumeratePhysicalDevices();
+
+        // print all devices
+        std::cout << "Available devices:" << std::endl;
+        for (const auto& device: devices) {
+            std::cout << " - " << device.getProperties().deviceName << std::endl;
+            std::cout << "   Type: " << vk::to_string(device.getProperties().deviceType) << std::endl;
+            std::cout << "   Geometry Shader: " << device.getFeatures().geometryShader << std::endl;
+        }
+
+        for (const auto& device: devices) {
+            if (isDeviceSuitable(device)) {
+                physicalDevice = device;
+                std::cout << "Selected " << physicalDevice.getProperties().deviceName << "." << std::endl;
+            }
+        }
+    }
+
+    void createLogicalDevice() {
+        
+    }
+
+    bool isDeviceSuitable(vk::PhysicalDevice device) {
+        auto prop = device.getProperties();
+        auto feat = device.getFeatures();
+
+        if (feat.geometryShader) {
+            return true;
+        } else {
+            return false;
+        }
+
+        // find queue family
+        // auto queueFamilies = device.getQueueFamilyProperties();
+        // for (const auto& queueFamily: queueFamilies) {
+        //     if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+        //         // Good
+        //     }
+        // }
     }
 
     void createInstance() {
