@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <optional>
+#include <set>
 
 class SillyDispatcher {
 public:
@@ -31,6 +32,7 @@ public:
 class HelloTriangleApplication {
 public:
     void run() {
+        initWindow();
         initVulkan();
         mainLoop();
         cleanup();
@@ -44,6 +46,8 @@ private:
     vk::PhysicalDevice physicalDevice;
     vk::Device device;
     vk::Queue graphicsQueue;
+    vk::Queue presentQueue;
+    vk::SurfaceKHR surface;
     SillyDispatcher dldis;
 
     constexpr static bool enableValidationLayers = true;
@@ -51,18 +55,28 @@ private:
         "VK_LAYER_KHRONOS_validation"
     };
 
-    void initVulkan() {
-        createInstance();
-        //dldi.init(instance);
-        setupDebugMessenger();
-        pickPhysicalDevice();
-
+    void initWindow() {
         glfwInit();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         window = glfwCreateWindow(800, 600, "Vulkan", nullptr, nullptr);
+    }
+
+    void initVulkan() {
+        createInstance();
+        //dldi.init(instance);
+        setupDebugMessenger();
+        createSurface();
+        pickPhysicalDevice();
+        createLogicalDevice();
+    }
+
+    void createSurface() {
+        if (glfwCreateWindowSurface(instance, window, nullptr, reinterpret_cast<VkSurfaceKHR *>(&surface)) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create window surface");
+        }
     }
 
     void pickPhysicalDevice() {
@@ -85,35 +99,60 @@ private:
         }
     }
 
+    // returns the queue with at least one of the given capability
+    std::optional<uint32_t> findPhysQueueIndice(enum class vk::QueueFlagBits flag) {
+        std::optional<uint32_t> index;
+        auto queueFamilies = physicalDevice.getQueueFamilyProperties();
+        int i = 0;
+        for (const auto& queueFamily: queueFamilies) {
+            if (queueFamily.queueFlags & flag) {
+                index = i;
+                break;
+            }
+            i++;
+        }
+        return index;
+    }
+
+    std::optional<uint32_t> findPhysQueueIndicePresent() {
+        std::optional<uint32_t> index;
+        auto queueFamilies = physicalDevice.getQueueFamilyProperties();
+        int i = 0;
+        for (const auto& queueFamily: queueFamilies) {
+            if (physicalDevice.getSurfaceSupportKHR(i, surface)) {
+                index = i;
+                break;
+            }
+            i++;
+        }
+        return index;
+    }
+
     void createLogicalDevice() {
         // find the appropriate queue with graphics support
-        std::optional<uint32_t> indice;
-        {
-            auto queueFamilies = physicalDevice.getQueueFamilyProperties();
-            int i = 0;
-            for (const auto& queueFamily: queueFamilies) {
-                if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
-                    indice = i;
-                    break;
-                }
-                i++;
-            }
-        }
-        assert(indice.has_value());
+        auto graphicsIndex = findPhysQueueIndice(vk::QueueFlagBits::eGraphics);
+        auto presentIndex = findPhysQueueIndicePresent();
+        assert(graphicsIndex.has_value() && presentIndex.has_value());
 
-        vk::DeviceQueueCreateInfo queueCreateInfo(
-            {},
-            indice.value(),
-            1,
-            std::array<float, 1>{1.0f}.data()    // queue priorities
-        );
+        std::set<uint32_t> uniqueQueueFamilies = {graphicsIndex.value(), presentIndex.value()};
+
+        std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+        for (uint32_t queueFamily: uniqueQueueFamilies) {
+            vk::DeviceQueueCreateInfo queueCreateInfo(
+                {},
+                queueFamily,
+                1,
+                std::array<float, 1>{1.0f}.data()    // queue priorities
+            );
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
 
         if constexpr (enableValidationLayers) {
             vk::DeviceCreateInfo createInfo(
                 {},
-                1,
-                &queueCreateInfo,
-                validationLayers.size(),
+                static_cast<uint32_t>(queueCreateInfos.size()),
+                queueCreateInfos.data(),
+                static_cast<uint32_t>(validationLayers.size()),
                 validationLayers.data(),
                 0,
                 nullptr,
@@ -124,8 +163,8 @@ private:
         } else {
             vk::DeviceCreateInfo createInfo(
                 {},
-                1,
-                &queueCreateInfo,
+                static_cast<uint32_t>(queueCreateInfos.size()),
+                queueCreateInfos.data(),
                 0,
                 nullptr,
                 0,
@@ -136,19 +175,46 @@ private:
             device = physicalDevice.createDevice(createInfo);
         }
 
-        graphicsQueue = device.getQueue(indice.value(), 0);
+        graphicsQueue = device.getQueue(graphicsIndex.value(), 0);
+        presentQueue = device.getQueue(presentIndex.value(), 0);
     }
 
     bool isDeviceSuitable(vk::PhysicalDevice device) {
         auto prop = device.getProperties();
         auto feat = device.getFeatures();
 
-        if (feat.geometryShader) {
-            return true;
-        } else {
-            return false;
-        }
+        bool haveGeometryShader = feat.geometryShader;
+        bool haveGraphicsQueue = [&]() -> bool {
+            bool haveRes = false;
+            auto queueFamilies = device.getQueueFamilyProperties();
+            int i = 0;
+            for (const auto& queueFamily: queueFamilies) {
+                if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+                    haveRes = true;
+                    break;
+                }
+                i++;
+            }
 
+            return haveRes;
+        }();
+
+        bool havePresentQueue = [&]() -> bool {
+            bool haveRes = false;
+            auto queueFamilies = device.getQueueFamilyProperties();
+            int i = 0;
+            for (const auto& queueFamily: queueFamilies) {
+                if (device.getSurfaceSupportKHR(i, surface)) {
+                    haveRes = true;
+                    break;
+                }
+                i++;
+            }
+            
+            return haveRes;
+        }();
+
+        return haveGeometryShader && haveGraphicsQueue && havePresentQueue;
     }
 
     void createInstance() {
@@ -264,6 +330,7 @@ private:
             instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldis);
         }
 
+        instance.destroySurfaceKHR(surface, nullptr);
         instance.destroy(nullptr);
 
         glfwDestroyWindow(window);
