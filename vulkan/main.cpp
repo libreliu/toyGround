@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
+#include <optional>
 
 class SillyDispatcher {
 public:
@@ -41,9 +42,14 @@ private:
     vk::DebugUtilsMessengerEXT debugMessenger;
     vk::DispatchLoaderDynamic dldi;
     vk::PhysicalDevice physicalDevice;
+    vk::Device device;
+    vk::Queue graphicsQueue;
     SillyDispatcher dldis;
 
     constexpr static bool enableValidationLayers = true;
+    const std::vector<const char *> validationLayers = {
+        "VK_LAYER_KHRONOS_validation"
+    };
 
     void initVulkan() {
         createInstance();
@@ -80,7 +86,57 @@ private:
     }
 
     void createLogicalDevice() {
-        
+        // find the appropriate queue with graphics support
+        std::optional<uint32_t> indice;
+        {
+            auto queueFamilies = physicalDevice.getQueueFamilyProperties();
+            int i = 0;
+            for (const auto& queueFamily: queueFamilies) {
+                if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+                    indice = i;
+                    break;
+                }
+                i++;
+            }
+        }
+        assert(indice.has_value());
+
+        vk::DeviceQueueCreateInfo queueCreateInfo(
+            {},
+            indice.value(),
+            1,
+            std::array<float, 1>{1.0f}.data()    // queue priorities
+        );
+
+        if constexpr (enableValidationLayers) {
+            vk::DeviceCreateInfo createInfo(
+                {},
+                1,
+                &queueCreateInfo,
+                validationLayers.size(),
+                validationLayers.data(),
+                0,
+                nullptr,
+                &vk::PhysicalDeviceFeatures{}     // no feature to be enabled
+            );
+
+            device = physicalDevice.createDevice(createInfo);
+        } else {
+            vk::DeviceCreateInfo createInfo(
+                {},
+                1,
+                &queueCreateInfo,
+                0,
+                nullptr,
+                0,
+                nullptr,
+                &vk::PhysicalDeviceFeatures{}     // no feature to be enabled
+            );
+
+            device = physicalDevice.createDevice(createInfo);
+        }
+
+        graphicsQueue = device.getQueue(indice.value(), 0);
     }
 
     bool isDeviceSuitable(vk::PhysicalDevice device) {
@@ -93,13 +149,6 @@ private:
             return false;
         }
 
-        // find queue family
-        // auto queueFamilies = device.getQueueFamilyProperties();
-        // for (const auto& queueFamily: queueFamilies) {
-        //     if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
-        //         // Good
-        //     }
-        // }
     }
 
     void createInstance() {
@@ -128,10 +177,6 @@ private:
         }
 
         if constexpr (enableValidationLayers) {
-            const std::vector<const char *> validationLayers = {
-                "VK_LAYER_KHRONOS_validation"
-            };
-
             for (auto &name: validationLayers) {
                 bool found = false;
                 for (const auto& layerProp: layers) {
@@ -213,6 +258,8 @@ private:
     }
 
     void cleanup() {
+        device.destroy();
+
         if constexpr (enableValidationLayers) {
             instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldis);
         }
