@@ -55,6 +55,10 @@ private:
         "VK_LAYER_KHRONOS_validation"
     };
 
+    const std::vector<const char *> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
     void initWindow() {
         glfwInit();
 
@@ -128,6 +132,16 @@ private:
         return index;
     }
 
+    std::tuple<vk::SurfaceCapabilitiesKHR, 
+             std::vector<vk::SurfaceFormatKHR>,
+             std::vector<vk::PresentModeKHR>> 
+    querySwapChainSupport(vk::PhysicalDevice device) {
+        auto capabilities = device.getSurfaceCapabilitiesKHR(surface);
+        auto formats = device.getSurfaceFormatsKHR(surface);
+        auto presentModes = device.getSurfacePresentModesKHR(surface);
+        return std::tie(capabilities, formats, presentModes);
+    }
+
     void createLogicalDevice() {
         // find the appropriate queue with graphics support
         auto graphicsIndex = findPhysQueueIndice(vk::QueueFlagBits::eGraphics);
@@ -154,8 +168,8 @@ private:
                 queueCreateInfos.data(),
                 static_cast<uint32_t>(validationLayers.size()),
                 validationLayers.data(),
-                0,
-                nullptr,
+                static_cast<uint32_t>(deviceExtensions.size()),
+                deviceExtensions.data(),
                 &vk::PhysicalDeviceFeatures{}     // no feature to be enabled
             );
 
@@ -167,8 +181,8 @@ private:
                 queueCreateInfos.data(),
                 0,
                 nullptr,
-                0,
-                nullptr,
+                static_cast<uint32_t>(deviceExtensions.size()),
+                deviceExtensions.data(),
                 &vk::PhysicalDeviceFeatures{}     // no feature to be enabled
             );
 
@@ -214,7 +228,29 @@ private:
             return haveRes;
         }();
 
-        return haveGeometryShader && haveGraphicsQueue && havePresentQueue;
+        bool haveDeviceExtensions = [&]() -> bool {
+            std::set<std::string> requiredExtensions(this->deviceExtensions.begin(), this->deviceExtensions.end());
+
+            auto availableExtensions = device.enumerateDeviceExtensionProperties(nullptr);
+
+            for (const auto& extension: availableExtensions) {
+                requiredExtensions.erase(std::string(extension.extensionName));
+            }
+
+            return requiredExtensions.empty();
+        }();
+
+        bool haveAdequateSwapChainSupport = [&]() -> bool {
+            // std::tuple<vk::SurfaceCapabilitiesKHR, 
+            //         std::vector<vk::SurfaceFormatKHR>,
+            //         std::vector<vk::PresentModeKHR>> 
+            auto res = querySwapChainSupport(device);
+            return !std::get<1>(res).empty() && !std::get<2>(res).empty();
+        }();
+
+        return haveGeometryShader && haveGraphicsQueue 
+            && havePresentQueue && haveDeviceExtensions
+            && haveAdequateSwapChainSupport;
     }
 
     void createInstance() {
@@ -265,7 +301,7 @@ private:
                 &appInfo,
                 static_cast<uint32_t>(validationLayers.size()),
                 validationLayers.data(),
-                requiredExtensions.size(),
+                static_cast<uint32_t>(requiredExtensions.size()),
                 requiredExtensions.data()
             );
 
