@@ -51,6 +51,11 @@ private:
     vk::SurfaceKHR surface;
     vk::SwapchainKHR swapChain;
     std::vector<vk::Image> swapChainImages;
+
+    vk::Format swapChainImageFormat;
+    // To use VkImage in render pipeline we need VkImageView
+    std::vector<vk::ImageView> swapChainImageViews;
+
     SillyDispatcher dldis;
 
     constexpr static bool enableValidationLayers = true;
@@ -118,6 +123,41 @@ private:
         pickPhysicalDevice();
         createLogicalDevice();
         createSwapChain();
+        createImageViews();
+    }
+
+    void createImageViews() {
+        swapChainImageViews.resize(swapChainImages.size());
+
+        for (size_t i = 0; i < swapChainImages.size(); i++) {
+            vk::ImageViewCreateInfo createInfo(
+                {},
+                swapChainImages[i],
+                // treat image as 2D texture
+                vk::ImageViewType::e2D,
+                swapChainImageFormat,
+
+                // component swizzling
+                vk::ComponentMapping(
+                    vk::ComponentSwizzle::eIdentity,
+                    vk::ComponentSwizzle::eIdentity,
+                    vk::ComponentSwizzle::eIdentity,
+                    vk::ComponentSwizzle::eIdentity
+                ),
+                // The subresourceRange field describes what the image's purpose
+                // is and which part of the image should be accessed.
+                vk::ImageSubresourceRange(
+                    vk::ImageAspectFlagBits::eColor,    // aspectMask
+                    0,                                  // baseMipLevel
+                    1,                                  // levelCount
+                    0,                                  // baseArrayLayer
+                    1                                   // layerCount
+                )
+            );
+
+            swapChainImageViews[i] = device.createImageView(createInfo);
+        }
+
     }
 
     void createSwapChain() {
@@ -207,6 +247,7 @@ private:
         swapChain = device.createSwapchainKHR(createInfo);
 
         swapChainImages = device.getSwapchainImagesKHR(swapChain);
+        swapChainImageFormat = surfaceFormat.format;
     }
 
     void createSurface() {
@@ -492,6 +533,10 @@ private:
     }
 
     void cleanup() {
+        for (auto imageView: swapChainImageViews) {
+            device.destroyImageView(imageView);
+        }
+        
         device.destroySwapchainKHR(swapChain);
         device.destroy();
 
