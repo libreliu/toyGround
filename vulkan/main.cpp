@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <optional>
 #include <set>
+#include <cstdint>
 
 class SillyDispatcher {
 public:
@@ -48,6 +49,8 @@ private:
     vk::Queue graphicsQueue;
     vk::Queue presentQueue;
     vk::SurfaceKHR surface;
+    vk::SwapchainKHR swapChain;
+    std::vector<vk::Image> swapChainImages;
     SillyDispatcher dldis;
 
     constexpr static bool enableValidationLayers = true;
@@ -58,6 +61,45 @@ private:
     const std::vector<const char *> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
+
+    vk::SurfaceFormatKHR chooseSwapSurfaceFormat(std::vector<vk::SurfaceFormatKHR> availableFormats) {
+        for (const auto& availableFormat : availableFormats) {
+            if (availableFormat.format == vk::Format::eB8G8R8A8Srgb 
+                // -> Use SRGB non linear colorSpace
+                && availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+                return availableFormat;
+            }
+        }
+
+        return availableFormats[0];
+    }
+
+    vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> availablePresentModes) {
+        for (const auto& availablePresentMode : availablePresentModes) {
+            if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
+                return availablePresentMode;
+            }
+        }
+
+        return vk::PresentModeKHR::eFifo;
+    }
+
+    // the swap chain resolution
+    vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
+        if (capabilities.currentExtent.width != UINT32_MAX) {
+            // apply current resolution
+            return capabilities.currentExtent;
+        } else { // window manager reports to be no current extent available
+            vk::Extent2D actualExtent = {800, 600};
+
+            actualExtent.width = 
+                std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+            actualExtent.height = 
+                std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+            return actualExtent;
+        }
+    }
 
     void initWindow() {
         glfwInit();
@@ -75,6 +117,96 @@ private:
         createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
+        createSwapChain();
+    }
+
+    void createSwapChain() {
+        // std::tuple<vk::SurfaceCapabilitiesKHR, 
+        //          std::vector<vk::SurfaceFormatKHR>,
+        //          std::vector<vk::PresentModeKHR>>
+
+        auto res = querySwapChainSupport(physicalDevice);
+
+        vk::Extent2D extent = chooseSwapExtent(std::get<0>(res));
+        vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(std::get<1>(res));
+        vk::PresentModeKHR presentMode = chooseSwapPresentMode(std::get<2>(res));
+
+        uint32_t imageCount = std::get<0>(res).minImageCount + 1;
+
+        if (std::get<0>(res).maxImageCount > 0 
+            && imageCount > std::get<0>(res).maxImageCount) {
+            imageCount = std::get<0>(res).maxImageCount;
+        }
+
+        // I'm skipping the assertion for now, TODO: add
+        uint32_t queueFamilyIndices[] = {
+            findPhysQueueIndice(vk::QueueFlagBits::eGraphics).value(),
+            findPhysQueueIndicePresent().value()
+        };
+
+        // If the graphics queue family and presentation queue family are the same, 
+        // which will be the case on most hardware, then we should stick to exclusive
+        // mode, because concurrent mode requires you to specify at least two distinct
+        // queue families.
+        bool use_exclusive = (queueFamilyIndices[0] == queueFamilyIndices[1]);
+
+        vk::SwapchainCreateInfoKHR createInfo(
+            {},                                            // flags
+            surface,                                       // surface
+            // minImageCount is the minimum number of presentable images that the 
+            // application needs. The implementation will either create the 
+            // swapchain with at least that many images, or it will fail to create
+            // the swapchain.
+            imageCount,                                    // minImageCount
+            surfaceFormat.format,                          // imageFormat
+            surfaceFormat.colorSpace,                      // imageColorSpace
+            extent,                                        // imageExtent
+            // The imageArrayLayers specifies the amount of layers each image 
+            // consists of. This is always 1 unless you are developing a 
+            // stereoscopic 3D application.
+            1,                                             // imageArrayLayers
+            // The imageUsage bit field specifies what kind of operations
+            // we'll use the images in the swap chain for. In this tutorial 
+            // we're going to render directly to them, which means that 
+            // they're used as color attachment. It is also possible that 
+            // you'll render images to a separate image first to perform 
+            // operations like post-processing.
+            vk::ImageUsageFlagBits::eColorAttachment,      // imageUsage
+            // Image Sharing mode, how to handle swap chain images that will be 
+            // used across multiple queue families
+            use_exclusive ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent,
+            use_exclusive ? 0 : 2,                         // queueFamilyIndexCount
+            use_exclusive ? nullptr : queueFamilyIndices,  // pQueueFamilyIndices
+
+            // whether we need to transform the images in swap chain
+            std::get<0>(res).currentTransform,             // preTransform
+            
+            // The compositeAlpha field specifies if the alpha channel should be
+            // used for blending with other windows in the window system.
+            vk::CompositeAlphaFlagBitsKHR::eOpaque,        // compositeAlpha
+
+            presentMode,                                   // presentMode
+
+            // clipped
+            //  If the clipped member is set to VK_TRUE then that means that we 
+            // don't care about the color of pixels that are obscured, for example 
+            // because another window is in front of them. Unless you really need 
+            // to be able to read these pixels back and get predictable results, 
+            // you'll get the best performance by enabling clipping.
+            VK_TRUE,                                       // clipped
+
+            // oldSwapchain
+            // With Vulkan it's possible that your swap chain becomes invalid or
+            // unoptimized while your application is running, for example because 
+            // the window was resized. In that case the swap chain actually needs
+            // to be recreated from scratch and a reference to the old one must be
+            // specified in this field.
+            {}                                             // oldSwapChain
+        );
+
+        swapChain = device.createSwapchainKHR(createInfo);
+
+        swapChainImages = device.getSwapchainImagesKHR(swapChain);
     }
 
     void createSurface() {
@@ -360,6 +492,7 @@ private:
     }
 
     void cleanup() {
+        device.destroySwapchainKHR(swapChain);
         device.destroy();
 
         if constexpr (enableValidationLayers) {
