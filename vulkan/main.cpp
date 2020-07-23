@@ -124,6 +124,50 @@ private:
         createLogicalDevice();
         createSwapChain();
         createImageViews();
+        createGraphicsPipeline();
+    }
+
+    void createGraphicsPipeline() {
+        // Input Assembler: (Fixed)
+        //   collects the raw vertex data from the buffers you specify and 
+        //   may also use an index buffer to repeat certain elements without
+        //   having to duplicate the vertex data itself.
+        // Vertex Shader:
+        //   run for every vertex and generally applies transformations to 
+        //   turn vertex positions from model space to screen space. It 
+        //   also passes per-vertex data down the pipeline.
+        // Tessellation:
+        //   allow you to subdivide geometry based on certain rules to 
+        //   increase the mesh quality. This is often used to make surfaces 
+        //   like brick walls and staircases look less flat when they are nearby.
+        // Geometry Shader:
+        //   run on every primitive (triangle, line, point) and can discard
+        //   it or output more primitives than came in. This is similar to
+        //   the tessellation shader, but much more flexible. However, it 
+        //   is not used much in today's applications because the performance 
+        //   is not that good on most graphics cards except for Intel's 
+        //   integrated GPUs.
+        // Rasterization: (Fixed)
+        //   discretizes the primitives into fragments. These are the pixel
+        //   elements that they fill on the framebuffer. Any fragments that
+        //   fall outside the screen are discarded and the attributes
+        //   outputted by the vertex shader are interpolated across the 
+        //   fragments, as shown in the figure. Usually the fragments that
+        //   are behind other primitive fragments are also discarded here
+        //   because of depth testing.
+        // Fragment Shader:
+        //   invoked for every fragment that survives and determines which
+        //   framebuffer(s) the fragments are written to and with which 
+        //   color and depth values. It can do this using the interpolated
+        //   data from the vertex shader, which can include things like 
+        //   texture coordinates and normals for lighting.
+        // Color Blending: (Fixed)
+        //   applies operations to mix different fragments that map to the
+        //   same pixel in the framebuffer. Fragments can simply overwrite
+        //   each other, add up or be mixed based upon transparency.
+
+
+        // Framebuffer
     }
 
     void createImageViews() {
@@ -536,7 +580,7 @@ private:
         for (auto imageView: swapChainImageViews) {
             device.destroyImageView(imageView);
         }
-        
+
         device.destroySwapchainKHR(swapChain);
         device.destroy();
 
