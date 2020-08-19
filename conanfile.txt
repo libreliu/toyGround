@@ -1,6 +1,8 @@
 [requires]
 wxwidgets/3.1.3@bincrafters/stable
 glfw/3.3.2
+UHEMesh/0.4.2
+tinygltf/2.4.0
 
 [generators]
 cmake
